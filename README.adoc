@@ -1,0 +1,96 @@
+This project is used to test features in Spring Data REST related to https://github.com/spring-projects/spring-hateoas/issues/250.
+
+With the code in this project, this is what I was able to do:
+
+First, test that the database loader has created one entry.
+
+----
+$ curl localhost:8080/brands
+{
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/brands{?page,size,sort}",
+      "templated" : true
+    }
+  },
+  "_embedded" : {
+    "brands" : [ {
+      "name" : "Pivotal",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/brands/1"
+        }
+      }
+    } ]
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}
+----
+
+This clearly shows that the paging feature is here. It starts out with *Pivotal* brand at `/brands/1`.
+
+Now, with verbosity switched on, attempt to *PUT* the same entity with a different name.
+
+----
+$ curl -v -X PUT -d '{"name":"Alibastine"}' -H "Content-Type: application/json" localhost:8080/brands/1
+* Adding handle: conn: 0x7fecb2004000
+* Adding handle: send: 0
+* Adding handle: recv: 0
+* Curl_addHandleToPipeline: length: 1
+* - Conn 0 (0x7fecb2004000) send_pipe: 1, recv_pipe: 0
+* About to connect() to localhost port 8080 (#0)
+*   Trying ::1...
+* Connected to localhost (::1) port 8080 (#0)
+> PUT /brands/1 HTTP/1.1
+> User-Agent: curl/7.30.0
+> Host: localhost:8080
+> Accept: */*
+> Content-Type: application/json
+> Content-Length: 21
+> 
+* upload completely sent off: 21 out of 21 bytes
+< HTTP/1.1 204 No Content
+* Server Apache-Coyote/1.1 is not blacklisted
+< Server: Apache-Coyote/1.1
+< Location: http://localhost:8080/brands/1
+< Date: Fri, 05 Sep 2014 15:55:40 GMT
+< 
+* Connection #0 to host localhost left intact
+----
+
+Looks alright. Same *Location* as we started with. Now let's check the outcome:
+
+----
+$ curl localhost:8080/brands
+{
+  "_links" : {
+    "self" : {
+      "href" : "http://localhost:8080/brands{?page,size,sort}",
+      "templated" : true
+    }
+  },
+  "_embedded" : {
+    "brands" : [ {
+      "name" : "Alibastine",
+      "_links" : {
+        "self" : {
+          "href" : "http://localhost:8080/brands/1"
+        }
+      }
+    } ]
+  },
+  "page" : {
+    "size" : 20,
+    "totalElements" : 1,
+    "totalPages" : 1,
+    "number" : 0
+  }
+}
+----
+
+`/brands/1` is clearly updated.
